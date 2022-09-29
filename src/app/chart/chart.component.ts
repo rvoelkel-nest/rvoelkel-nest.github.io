@@ -13,10 +13,10 @@ import am5themes_Dark from '@amcharts/amcharts5/themes/Dark';
 export class ChartComponent implements OnDestroy, AfterViewInit {
   private root: am5.Root;
   chart: am5xy.XYChart;
-  xAxis: am5xy.DateAxis<am5xy.AxisRenderer>;
   yAxisList: any[] = [];
   legend: any;
-  loading: boolean;
+
+  fileName: string;
 
   constructor(private zone: NgZone) { }
 
@@ -34,20 +34,11 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
         })
       );
 
-      // Create X-Axis
-      const xAxis = chart.xAxes.push(
-        am5xy.DateAxis.new(root, {
-          renderer: am5xy.AxisRendererX.new(root, {}),
-          baseInterval: { timeUnit: 'second', count: 1 }
-        })
-      );
-
       // add legend
       this.legend = chart.children.push(am5.Legend.new(root, {}));
 
       this.root = root;
       this.chart = chart;
-      this.xAxis = xAxis;
     });
   }
 
@@ -60,20 +51,24 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
     });
   }
 
-  handleFile(ev) {
+  handleSMAFile(ev) {
     const inputElement = ev.target as HTMLInputElement;
     if (inputElement) {
       if (inputElement.files && inputElement.files.length > 0) {
-        this.readFile(inputElement.files[0]);
+        this.readSMAFile(inputElement.files[0]);
       }
     }
   }
 
-  readFile(file: File) {
+  readSMAFile(file: File) {
+    this.fileName = file.name;
     // reset chart
     this.yAxisList = [];
     if (this.chart.series) {
       this.chart.series.clear();
+    }
+    if (this.chart.xAxes) {
+      this.chart.xAxes.clear();
     }
     if (this.chart.yAxes) {
       this.chart.yAxes.clear();
@@ -86,6 +81,14 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
       const jsonData = JSON.parse(textResult);
       console.log(jsonData);
 
+      // Create X-Axis
+      const xAxis = this.chart.xAxes.push(
+        am5xy.DateAxis.new(this.root, {
+          renderer: am5xy.AxisRendererX.new(this.root, {}),
+          baseInterval: { timeUnit: 'second', count: 1 }
+        })
+      );
+
       for (const mst of jsonData.Messstellen) {
         // Create Y-axis
         const yAxis = this.getYAxis(mst.Config.Unit);
@@ -94,7 +97,7 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
         const series = this.chart.series.push(
           am5xy.LineSeries.new(this.root, {
             name: mst.Config.Name,
-            xAxis: this.xAxis,
+            xAxis: xAxis,
             yAxis: yAxis,
             valueYField: 'Value',
             valueXField: 'Date'
@@ -110,13 +113,15 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
         });
 
         series.data.setAll(mst.Values);
+
+        console.log('finished mst: ' + mst.Config.Name);
       }
 
       // Add legend
       this.legend.data.setAll(this.chart.series.values);
 
       // Add cursor
-      this.chart.set('cursor', am5xy.XYCursor.new(this.root, { behavior: 'zoomXY', xAxis: this.xAxis }));
+      this.chart.set('cursor', am5xy.XYCursor.new(this.root, { behavior: 'zoomXY', xAxis: xAxis }));
     };
   }
 
@@ -153,5 +158,73 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
     this.yAxisList.push({ yAxis, unit });
 
     return yAxis;
+  }
+
+  handleNCxFile(ev) {
+    const inputElement = ev.target as HTMLInputElement;
+    if (inputElement) {
+      if (inputElement.files && inputElement.files.length > 0) {
+        this.readNCxFile(inputElement.files[0]);
+      }
+    }
+  }
+
+  readNCxFile(file: File) {
+    this.fileName = file.name;
+    // reset chart
+    this.yAxisList = [];
+    if (this.chart.series) {
+      this.chart.series.clear();
+    }
+    if (this.chart.yAxes) {
+      this.chart.yAxes.clear();
+    }
+
+    const fileReader = new FileReader();
+    fileReader.readAsText(file);
+    fileReader.onload = () => {
+      const textResult = fileReader.result as string;
+      const jsonData = JSON.parse(textResult);
+      console.log(jsonData);
+
+      // Create X-Axis
+      const xAxis = this.chart.xAxes.push(
+        am5xy.ValueAxis.new(this.root, {
+          renderer: am5xy.AxisRendererX.new(this.root, {})
+        })
+      );
+
+      for (const channel of jsonData.Channels.slice(0, 5)) {
+        // Create Y-axis
+        const yAxis = this.getYAxis(channel.Unit);
+
+        // Create series
+        const series = this.chart.series.push(
+          am5xy.LineSeries.new(this.root, {
+            name: channel.Name,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: 'y',
+            valueXField: 'x',
+            minDistance: 10
+          })
+        );
+        series.strokes.template.setAll({
+          strokeWidth: 2
+        });
+
+        const values = channel.Values.map((val, i) => ({ x: i, y: val }));
+
+        series.data.setAll(values);
+
+        console.log('finished channel: ' + channel.Name);
+      }
+
+      // Add legend
+      this.legend.data.setAll(this.chart.series.values);
+
+      // Add cursor
+      this.chart.set('cursor', am5xy.XYCursor.new(this.root, { behavior: 'zoomXY', xAxis: xAxis }));
+    };
   }
 }
