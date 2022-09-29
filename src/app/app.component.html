@@ -1,1 +1,8 @@
-<app-chart></app-chart>
+
+<button *ngIf="!showChart" (click)="onShowChart()">Show chart</button>
+<button *ngIf="showChart" (click)="onHideChart()">Hide chart</button>
+<app-chart *ngIf="showChart"></app-chart>
+
+<button *ngIf="!showGroupingChart" (click)="onShowGroupingChart()">Show grouping chart</button>
+<button *ngIf="showGroupingChart" (click)="onHideGroupingChart()">Hide grouping chart</button>
+<app-chart-grouping *ngIf="showGroupingChart"></app-chart-grouping>

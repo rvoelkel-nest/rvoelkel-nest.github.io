@@ -3,11 +3,13 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { ChartComponent } from './chart/chart.component';
+import { ChartGroupingComponent } from './chart-grouping/chart-grouping.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    ChartComponent
+    ChartComponent,
+    ChartGroupingComponent
   ],
   imports: [
     BrowserModule
