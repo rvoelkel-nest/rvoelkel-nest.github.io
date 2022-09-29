@@ -94,42 +94,71 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
         })
       );
 
-      for (const mst of jsonData.Messstellen) {
-        // Create Y-axis
-        const yAxis = this.getYAxis(mst.Config.Unit);
+      const xAxis2 = this.chart.xAxes.push(
+        am5xy.DurationAxis.new(this.root, {
+          marginTop: 10,
+          renderer: am5xy.AxisRendererX.new(this.root, {}),
+          baseUnit: 'second'
+        })
+      );
 
-        // Create series
-        const series = this.chart.series.push(
-          am5xy.LineSeries.new(this.root, {
-            name: mst.Config.Name,
-            xAxis: xAxis,
-            yAxis: yAxis,
-            valueYField: 'Value',
-            valueXField: 'Date',
-            tooltip: am5.Tooltip.new(this.root, {
-              labelText: '{valueY}'
-            })
+      // for (const mst of jsonData.Messstellen) {
+      const mst = jsonData.Messstellen[0];
+      // Create Y-axis
+      const yAxis = this.getYAxis(mst.Config.Unit);
+
+      // Create series
+      const series = this.chart.series.push(
+        am5xy.LineSeries.new(this.root, {
+          name: mst.Config.Name,
+          xAxis: xAxis,
+          yAxis: yAxis,
+          valueYField: 'Value',
+          valueXField: 'Date',
+          tooltip: am5.Tooltip.new(this.root, {
+            labelText: '{valueY}'
           })
-        );
-        series.strokes.template.setAll({
-          strokeWidth: 2
-        });
+        })
+      );
+      series.strokes.template.setAll({
+        strokeWidth: 2
+      });
 
-        series.data.processor = am5.DataProcessor.new(this.root, {
-          dateFields: ['Date'],
-          dateFormat: 'yyyy-MM-ddTHH:mm:ss'
-        });
+      series.data.processor = am5.DataProcessor.new(this.root, {
+        dateFields: ['Date'],
+        dateFormat: 'yyyy-MM-ddTHH:mm:ss'
+      });
 
-        series.data.setAll(mst.Values);
+      series.data.setAll(mst.Values);
 
-        console.log('finished mst: ' + mst.Config.Name);
-      }
+      console.log('finished mst: ' + mst.Config.Name);
+      // }
+
+      // Create series
+      const series2 = this.chart.series.push(
+        am5xy.LineSeries.new(this.root, {
+          name: mst.Config.Name,
+          xAxis: xAxis2,
+          yAxis: yAxis,
+          valueYField: 'Value',
+          valueXField: 'Date',
+          tooltip: am5.Tooltip.new(this.root, {
+            labelText: '{valueY}'
+          })
+        })
+      );
+      series2.strokes.template.setAll({
+        strokeWidth: 2
+      });
+
+      const data = mst.Values.map((val, i) => ({ Date: (val.Date - mst.Values[0].Date) / 1000, Value: val.Value }));
+      series2.data.setAll(data);
 
       // Add legend
       this.legend.data.setAll(this.chart.series.values);
 
       // Add cursor
-      this.chart.set('cursor', am5xy.XYCursor.new(this.root, { behavior: 'zoomXY', xAxis: xAxis }));
+      this.chart.set('cursor', am5xy.XYCursor.new(this.root, { behavior: 'zoomXY' }));
     };
   }
 
