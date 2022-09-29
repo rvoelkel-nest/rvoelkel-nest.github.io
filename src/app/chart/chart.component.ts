@@ -37,6 +37,11 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
       // add legend
       this.legend = chart.children.push(am5.Legend.new(root, {}));
 
+      // Add scrollbar
+      chart.set('scrollbarX', am5.Scrollbar.new(root, {
+        orientation: 'horizontal'
+      }));
+
       this.root = root;
       this.chart = chart;
     });
@@ -100,7 +105,10 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
             xAxis: xAxis,
             yAxis: yAxis,
             valueYField: 'Value',
-            valueXField: 'Date'
+            valueXField: 'Date',
+            tooltip: am5.Tooltip.new(this.root, {
+              labelText: '{valueY}'
+            })
           })
         );
         series.strokes.template.setAll({
@@ -140,8 +148,6 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
       })
     );
 
-    yAxis.set('tooltip', am5.Tooltip.new(this.root, {}));
-
     const label = am5.Label.new(this.root, {
       rotation: oppositeYAxis ? 90 : -90,
       text: unit,
@@ -176,6 +182,9 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
     if (this.chart.series) {
       this.chart.series.clear();
     }
+    if (this.chart.xAxes) {
+      this.chart.xAxes.clear();
+    }
     if (this.chart.yAxes) {
       this.chart.yAxes.clear();
     }
@@ -206,7 +215,9 @@ export class ChartComponent implements OnDestroy, AfterViewInit {
             yAxis: yAxis,
             valueYField: 'y',
             valueXField: 'x',
-            minDistance: 10
+            tooltip: am5.Tooltip.new(this.root, {
+              labelText: '{valueY}'
+            })
           })
         );
         series.strokes.template.setAll({
