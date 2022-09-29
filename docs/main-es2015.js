@@ -138,16 +138,10 @@ class ChartComponent {
                 panY: false,
                 layout: root.verticalLayout
             }));
-            // Create X-Axis
-            const xAxis = chart.xAxes.push(_amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["DateAxis"].new(root, {
-                renderer: _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["AxisRendererX"].new(root, {}),
-                baseInterval: { timeUnit: 'second', count: 1 }
-            }));
             // add legend
             this.legend = chart.children.push(_amcharts_amcharts5__WEBPACK_IMPORTED_MODULE_1__["Legend"].new(root, {}));
             this.root = root;
             this.chart = chart;
-            this.xAxis = xAxis;
         });
     }
     ngOnDestroy() {
@@ -158,19 +152,23 @@ class ChartComponent {
             }
         });
     }
-    handleFile(ev) {
+    handleSMAFile(ev) {
         const inputElement = ev.target;
         if (inputElement) {
             if (inputElement.files && inputElement.files.length > 0) {
-                this.readFile(inputElement.files[0]);
+                this.readSMAFile(inputElement.files[0]);
             }
         }
     }
-    readFile(file) {
+    readSMAFile(file) {
+        this.fileName = file.name;
         // reset chart
         this.yAxisList = [];
         if (this.chart.series) {
             this.chart.series.clear();
+        }
+        if (this.chart.xAxes) {
+            this.chart.xAxes.clear();
         }
         if (this.chart.yAxes) {
             this.chart.yAxes.clear();
@@ -181,13 +179,18 @@ class ChartComponent {
             const textResult = fileReader.result;
             const jsonData = JSON.parse(textResult);
             console.log(jsonData);
+            // Create X-Axis
+            const xAxis = this.chart.xAxes.push(_amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["DateAxis"].new(this.root, {
+                renderer: _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["AxisRendererX"].new(this.root, {}),
+                baseInterval: { timeUnit: 'second', count: 1 }
+            }));
             for (const mst of jsonData.Messstellen) {
                 // Create Y-axis
                 const yAxis = this.getYAxis(mst.Config.Unit);
                 // Create series
                 const series = this.chart.series.push(_amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["LineSeries"].new(this.root, {
                     name: mst.Config.Name,
-                    xAxis: this.xAxis,
+                    xAxis: xAxis,
                     yAxis: yAxis,
                     valueYField: 'Value',
                     valueXField: 'Date'
@@ -200,11 +203,12 @@ class ChartComponent {
                     dateFormat: 'yyyy-MM-ddTHH:mm:ss'
                 });
                 series.data.setAll(mst.Values);
+                console.log('finished mst: ' + mst.Config.Name);
             }
             // Add legend
             this.legend.data.setAll(this.chart.series.values);
             // Add cursor
-            this.chart.set('cursor', _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["XYCursor"].new(this.root, { behavior: 'zoomXY', xAxis: this.xAxis }));
+            this.chart.set('cursor', _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["XYCursor"].new(this.root, { behavior: 'zoomXY', xAxis: xAxis }));
         };
     }
     getYAxis(unit) {
@@ -229,18 +233,91 @@ class ChartComponent {
         this.yAxisList.push({ yAxis, unit });
         return yAxis;
     }
+    handleNCxFile(ev) {
+        const inputElement = ev.target;
+        if (inputElement) {
+            if (inputElement.files && inputElement.files.length > 0) {
+                this.readNCxFile(inputElement.files[0]);
+            }
+        }
+    }
+    readNCxFile(file) {
+        this.fileName = file.name;
+        // reset chart
+        this.yAxisList = [];
+        if (this.chart.series) {
+            this.chart.series.clear();
+        }
+        if (this.chart.yAxes) {
+            this.chart.yAxes.clear();
+        }
+        const fileReader = new FileReader();
+        fileReader.readAsText(file);
+        fileReader.onload = () => {
+            const textResult = fileReader.result;
+            const jsonData = JSON.parse(textResult);
+            console.log(jsonData);
+            // Create X-Axis
+            const xAxis = this.chart.xAxes.push(_amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["ValueAxis"].new(this.root, {
+                renderer: _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["AxisRendererX"].new(this.root, {})
+            }));
+            for (const channel of jsonData.Channels.slice(0, 5)) {
+                // Create Y-axis
+                const yAxis = this.getYAxis(channel.Unit);
+                // Create series
+                const series = this.chart.series.push(_amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["LineSeries"].new(this.root, {
+                    name: channel.Name,
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    valueYField: 'y',
+                    valueXField: 'x',
+                    minDistance: 10
+                }));
+                series.strokes.template.setAll({
+                    strokeWidth: 2
+                });
+                const values = channel.Values.map((val, i) => ({ x: i, y: val }));
+                series.data.setAll(values);
+                console.log('finished channel: ' + channel.Name);
+            }
+            // Add legend
+            this.legend.data.setAll(this.chart.series.values);
+            // Add cursor
+            this.chart.set('cursor', _amcharts_amcharts5_xy__WEBPACK_IMPORTED_MODULE_2__["XYCursor"].new(this.root, { behavior: 'zoomXY', xAxis: xAxis }));
+        };
+    }
 }
 ChartComponent.ɵfac = function ChartComponent_Factory(t) { return new (t || ChartComponent)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdirectiveInject"](_angular_core__WEBPACK_IMPORTED_MODULE_0__["NgZone"])); };
-ChartComponent.ɵcmp = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineComponent"]({ type: ChartComponent, selectors: [["app-chart"]], decls: 5, vars: 0, consts: [["id", "chartdiv", 2, "width", "100%", "height", "500px"], ["id", "inputValue", "type", "file", "accept", ".json", "onclick", "this.value=null", 2, "color", "white", 3, "change"]], template: function ChartComponent_Template(rf, ctx) { if (rf & 1) {
+ChartComponent.ɵcmp = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineComponent"]({ type: ChartComponent, selectors: [["app-chart"]], decls: 15, vars: 1, consts: [["id", "chartdiv", 2, "width", "100%", "height", "500px"], [3, "click"], ["id", "inputValue", "type", "file", "accept", ".json", "onclick", "this.value=null", 2, "display", "none", 3, "change"], ["getSMAFile", ""], ["getNCxFile", ""], [2, "color", "white"]], template: function ChartComponent_Template(rf, ctx) { if (rf & 1) {
+        const _r2 = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵgetCurrentView"]();
         _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelement"](0, "div", 0);
         _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](1, "p");
-        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](2, "input", 1);
-        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵlistener"]("change", function ChartComponent_Template_input_change_2_listener($event) { return ctx.handleFile($event); });
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](2, "button", 1);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵlistener"]("click", function ChartComponent_Template_button_click_2_listener() { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵrestoreView"](_r2); const _r0 = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵreference"](5); return _r0.click(); });
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵtext"](3, "Load SMA file");
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](4, "input", 2, 3);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵlistener"]("change", function ChartComponent_Template_input_change_4_listener($event) { return ctx.handleSMAFile($event); });
         _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
         _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](3, "p");
-        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelement"](4, "progress");
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](6, "p");
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](7, "button", 1);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵlistener"]("click", function ChartComponent_Template_button_click_7_listener() { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵrestoreView"](_r2); const _r1 = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵreference"](10); return _r1.click(); });
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵtext"](8, "Load NCx file");
         _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](9, "input", 2, 4);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵlistener"]("change", function ChartComponent_Template_input_change_9_listener($event) { return ctx.handleNCxFile($event); });
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](11, "p");
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelement"](12, "progress");
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementStart"](13, "p", 5);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵtext"](14);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵelementEnd"]();
+    } if (rf & 2) {
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵadvance"](14);
+        _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵtextInterpolate1"](" ", ctx.fileName, "\n");
     } }, styles: ["\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiJzcmMvYXBwL2NoYXJ0L2NoYXJ0LmNvbXBvbmVudC5jc3MifQ== */"] });
 /*@__PURE__*/ (function () { _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](ChartComponent, [{
         type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"],
